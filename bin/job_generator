@@ -8,9 +8,8 @@ require 'right_aws'
 Signal.trap('INT') { AMQP.stop{ EM.stop } }
 Signal.trap('TERM'){ AMQP.stop{ EM.stop } }
 
-host  = ARGV.shift
-count = 0
-s3    = RightAws::S3Interface.new(ENV['AMAZON_ACCESS_KEY_ID'], ENV['AMAZON_SECRET_ACCESS_KEY'])
+host = ARGV.shift
+s3   = RightAws::S3Interface.new(ENV['AMAZON_ACCESS_KEY_ID'], ENV['AMAZON_SECRET_ACCESS_KEY'])
 
 AMQP.start(:host => host) do
   exchange = MQ.direct('jobs')
@@ -22,8 +21,5 @@ AMQP.start(:host => host) do
     end
   end
 
-  count += 1
   AMQP.stop { EM.stop }
 end
-
-puts "#{count} data enqueued for generation."
