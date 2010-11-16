@@ -9,6 +9,8 @@ def download_and_watermark(from_key, to_key)
   
   if result
     if $s3.put('assets.vintageaerial.com', to_key, File.open(output_path), {"x-amz-acl" => "public-read"})
+      system(%Q[rm "#{output_path}"])
+      
       return to_key
     else
       return nil
