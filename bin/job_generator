@@ -1,0 +1,34 @@
+#!/usr/bin/env ruby
+require 'rubygems'
+require 'eventmachine'
+require 'mq'
+require 'right_aws'
+
+AWSID = (ENV['AMAZON_ACCESS_KEY_ID'] || 'XXXXXXXXXXXXXXXXXXXX')
+AWSKEY = (ENV['AMAZON_SECRET_ACCESS_KEY'] || 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
+
+Signal.trap('INT') { AMQP.stop{ EM.stop } }
+Signal.trap('TERM'){ AMQP.stop{ EM.stop } }
+
+host = ARGV.shift
+count = 0
+
+AMQP.start(:host => host) do
+ exchange = MQ.direct('jobs')
+ exchange.publish(ARGV[0])
+ # STDIN.each_line do |file|
+ #   count += 1
+ #   $stdout.print "."; $stdout.flush
+ #   payload = {
+ #     :input => [input_bucket, file.strip],
+ #     :output => [output_bucket, output_prefix],
+ #     :s3id => AWSID,
+ #     :s3key => AWSKEY
+ #   }
+ #   exchange.publish(Marshal.dump(payload))
+ # end
+ count += 1
+ AMQP.stop { EM.stop }
+end
+
+puts "#{count} data enqueued for generation."

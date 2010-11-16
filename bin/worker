@@ -1,0 +1,19 @@
+#!/usr/bin/env ruby
+require 'rubygems'
+require 'eventmachine'
+require 'mq'
+require 'logger'
+
+Signal.trap('INT') { AMQP.stop{ EM.stop } }
+Signal.trap('TERM'){ AMQP.stop{ EM.stop } }
+
+logger = Logger.new(STDOUT)
+logger.level = Logger::DEBUG
+  
+AMQP.start(:host => ARGV.shift) do
+ MQ.prefetch(1)
+ MQ.queue('jobs').bind(MQ.direct('jobs')).subscribe do |header, body|
+   logger.info body
+   # GenerationJob.new(body).generate
+ end
+end
