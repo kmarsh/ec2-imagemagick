@@ -1,19 +1,30 @@
 #!/usr/bin/env ruby
+$: << File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib'))
 require 'rubygems'
 require 'eventmachine'
 require 'mq'
 require 'logger'
+require 'imagemagick'
+require 'right_aws'
+require 'tempfile'
 
 Signal.trap('INT') { AMQP.stop{ EM.stop } }
 Signal.trap('TERM'){ AMQP.stop{ EM.stop } }
 
 logger = Logger.new(STDOUT)
 logger.level = Logger::DEBUG
+
+$s3 = RightAws::S3Interface.new(ENV['AMAZON_ACCESS_KEY_ID'], ENV['AMAZON_SECRET_ACCESS_KEY'])
   
 AMQP.start(:host => ARGV.shift) do
  MQ.prefetch(1)
  MQ.queue('jobs').bind(MQ.direct('jobs')).subscribe do |header, body|
-   logger.info body
-   # GenerationJob.new(body).generate
+   logger.info "Got key: #{body}"
+   if body.include?('700x503')
+     new_key = body.gsub('700x503', '650x433w')
+
+     logger.info "#{body} -> #{new_key}"
+     download_and_watermark(body, new_key)
+   end
  end
 end

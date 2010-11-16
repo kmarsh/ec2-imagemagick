@@ -1,46 +1,29 @@
 #!/usr/bin/env ruby
+$: << File.expand_path(File.join(File.dirname(__FILE__), 'lib'))
 require 'rubygems'
 require 'eventmachine'
 require 'mq'
 require 'right_aws'
 
-AWSID = (ENV['AMAZON_ACCESS_KEY_ID'] || 'XXXXXXXXXXXXXXXXXXXX')
-AWSKEY = (ENV['AMAZON_SECRET_ACCESS_KEY'] || 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
-
-s3 = RightAws::S3Interface.new(AWSID, AWSKEY)
-
 Signal.trap('INT') { AMQP.stop{ EM.stop } }
 Signal.trap('TERM'){ AMQP.stop{ EM.stop } }
 
-host = ARGV.shift
+host  = ARGV.shift
 count = 0
+s3    = RightAws::S3Interface.new(ENV['AMAZON_ACCESS_KEY_ID'], ENV['AMAZON_SECRET_ACCESS_KEY'])
 
 AMQP.start(:host => host) do
- exchange = MQ.direct('jobs')
- 
- s3.incrementally_list_bucket('assets.vintageaerial.com', { 'prefix'=>'01/003/', 'marker'=>'' }) do |key|
-   key[:contents].map {|k| k[:key] }.select {|k| k.match(/700x503.+\.jpg$/)}.each do |k|
-     exchange.publish(k)
-   end
- end
+  exchange = MQ.direct('jobs')
 
+  s3.incrementally_list_bucket('assets.vintageaerial.com', { 'prefix'=>'01/003/' }) do |key|
+    key[:contents].map {|k| k[:key] }.select {|k| k.match(/700x503.+\.jpg$/)}.each do |k|
+      puts k
+      exchange.publish(k)
+    end
+  end
 
- 
- 
- # exchange.publish(ARGV[0])
- # STDIN.each_line do |file|
- #   count += 1
- #   $stdout.print "."; $stdout.flush
- #   payload = {
- #     :input => [input_bucket, file.strip],
- #     :output => [output_bucket, output_prefix],
- #     :s3id => AWSID,
- #     :s3key => AWSKEY
- #   }
- #   exchange.publish(Marshal.dump(payload))
- # end
- count += 1
- AMQP.stop { EM.stop }
+  count += 1
+  AMQP.stop { EM.stop }
 end
 
 puts "#{count} data enqueued for generation."
