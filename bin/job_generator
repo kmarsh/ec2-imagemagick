@@ -8,13 +8,20 @@ require 'right_aws'
 Signal.trap('INT') { AMQP.stop{ EM.stop } }
 Signal.trap('TERM'){ AMQP.stop{ EM.stop } }
 
-host = ARGV.shift
-s3   = RightAws::S3Interface.new(ENV['AMAZON_ACCESS_KEY_ID'], ENV['AMAZON_SECRET_ACCESS_KEY'])
+host   = ARGV[0]
+prefix = "#{ARGV[1]}/#{ARGV[2]}/"
+
+if !prefix.match(/^(\d{2})\/\d{3}\/$/)
+  puts "Usage: #{$1} server XX XXX"
+  exit
+end
+
+s3     = RightAws::S3Interface.new(ENV['AMAZON_ACCESS_KEY_ID'], ENV['AMAZON_SECRET_ACCESS_KEY'])
 
 AMQP.start(:host => host) do
   exchange = MQ.direct('jobs')
 
-  s3.incrementally_list_bucket('assets.vintageaerial.com', { 'prefix'=>'01/003/' }) do |key|
+  s3.incrementally_list_bucket('assets.vintageaerial.com', { 'prefix' => prefix }) do |key|
     key[:contents].map {|k| k[:key] }.select {|k| k.match(/700x503.+\.jpg$/)}.each do |k|
       puts k
       exchange.publish(k)
