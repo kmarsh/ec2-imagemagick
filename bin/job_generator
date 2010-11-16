@@ -7,6 +7,8 @@ require 'right_aws'
 AWSID = (ENV['AMAZON_ACCESS_KEY_ID'] || 'XXXXXXXXXXXXXXXXXXXX')
 AWSKEY = (ENV['AMAZON_SECRET_ACCESS_KEY'] || 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
 
+s3 = RightAws::S3Interface.new(AWSID, AWSKEY)
+
 Signal.trap('INT') { AMQP.stop{ EM.stop } }
 Signal.trap('TERM'){ AMQP.stop{ EM.stop } }
 
@@ -15,7 +17,17 @@ count = 0
 
 AMQP.start(:host => host) do
  exchange = MQ.direct('jobs')
- exchange.publish(ARGV[0])
+ 
+ s3.incrementally_list_bucket('assets.vintageaerial.com', { 'prefix'=>'01/003/', 'marker'=>'' }) do |key|
+   key[:contents].map {|k| k[:key] }.select {|k| k.match(/700x503.+\.jpg$/)}.each do |k|
+     exchange.publish(k)
+   end
+ end
+
+
+ 
+ 
+ # exchange.publish(ARGV[0])
  # STDIN.each_line do |file|
  #   count += 1
  #   $stdout.print "."; $stdout.flush
