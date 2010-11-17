@@ -20,7 +20,6 @@ $s3 = RightAws::S3Interface.new(ENV['AMAZON_ACCESS_KEY_ID'], ENV['AMAZON_SECRET_
   
 AMQP.start(:host => ARGV.shift) do
  MQ.queue('jobs').subscribe do |header, body|
-   logger.info "Got key: #{body}"
    if body.include?('700x503')
      new_key = body.gsub('700x503', '650x433w')
 
