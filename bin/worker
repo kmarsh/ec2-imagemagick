@@ -30,7 +30,7 @@ AMQP.start(:host => ARGV.shift) do
       sleep 1
      else
        result = download_and_watermark(body, new_key)
-       h.ack if result
+       header.ack if result
      end
    end
  end
