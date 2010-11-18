@@ -9,12 +9,29 @@ Signal.trap('INT') { AMQP.stop{ EM.stop } }
 Signal.trap('TERM'){ AMQP.stop{ EM.stop } }
 
 host   = ARGV[0]
-prefix = "#{ARGV[1]}/#{ARGV[2]}/"
 
-if !prefix.match(/^(\d{2})\/\d{3}\/$/)
-  puts "Usage: #{$1} server XX XXX"
-  exit
+case ARGV.size
+  when 3
+    prefix = "#{ARGV[1]}/#{ARGV[2]}/"
+
+    if !prefix.match(/^(\d{2})\/\d{3}\/$/)
+      puts "Usage: #{$1} server XX XXX"
+      exit
+    end
+    
+  when 4
+    prefix = "#{ARGV[1]}/#{ARGV[2]}/#{ARGV[3]}/"
+
+    if !prefix.match(/^(\d{2})\/\d{3}\/$/)
+      puts "Usage: #{$1} server XX XXX PRE"
+      exit
+    end
+    
+  else
+    puts "Usage: #{$1} server XX XXX"
+    exit    
 end
+
 
 s3 = RightAws::S3Interface.new(ENV['AMAZON_ACCESS_KEY_ID'], ENV['AMAZON_SECRET_ACCESS_KEY'])
 
