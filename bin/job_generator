@@ -8,7 +8,8 @@ require 'right_aws'
 Signal.trap('INT') { AMQP.stop{ EM.stop } }
 Signal.trap('TERM'){ AMQP.stop{ EM.stop } }
 
-host   = ARGV[0]
+host  = ARGV[0]
+count = 0
 
 case ARGV.size
   when 3
@@ -21,11 +22,6 @@ case ARGV.size
     
   when 4
     prefix = "#{ARGV[1]}/#{ARGV[2]}/#{ARGV[3]}/"
-
-    if !prefix.match(/^(\d{2})\/\d{3}\/$/)
-      puts "Usage: #{$1} server XX XXX PRE"
-      exit
-    end
     
   else
     puts "Usage: #{$1} server XX XXX"
@@ -36,11 +32,15 @@ end
 s3 = RightAws::S3Interface.new(ENV['AMAZON_ACCESS_KEY_ID'], ENV['AMAZON_SECRET_ACCESS_KEY'])
 
 AMQP.start(:host => host) do
+  queue = MQ.queue("jobs")
   s3.incrementally_list_bucket('assets.vintageaerial.com', { 'prefix' => prefix }) do |key|
     key[:contents].map {|k| k[:key] }.select {|k| k.match(/700x503.+\.jpg$/)}.each do |k|
-      MQ.queue("jobs").publish(k)
+      queue.publish(k)
+      count += 1
     end
   end
 
   AMQP.stop { EM.stop }
 end
+
+puts "#{count} jobs queued"

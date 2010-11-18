@@ -26,8 +26,7 @@ AMQP.start(:host => ARGV.shift) do
      logger.info "#{body} -> #{new_key}"
      
      if pretend
-      logger.info "Pretending to process #{body}"
-      sleep 1
+      sleep 2
      else
        result = download_and_watermark(body, new_key)
        header.ack if result
