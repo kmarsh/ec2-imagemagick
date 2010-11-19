@@ -1,0 +1,35 @@
+#!/usr/bin/env ruby
+$: << File.expand_path(File.join(File.dirname(__FILE__), 'lib'))
+require 'rubygems'
+require 'right_aws'
+
+host  = ARGV[0]
+count = 0
+
+case ARGV.size
+  when 3
+    prefix = "#{ARGV[1]}/#{ARGV[2]}/"
+
+    if !prefix.match(/^(\d{2})\/\d{3}\/$/)
+      puts "Usage: #{$1} server XX XXX"
+      exit
+    end
+    
+  when 4
+    prefix = "#{ARGV[1]}/#{ARGV[2]}/#{ARGV[3]}/"
+    
+  else
+    puts "Usage: #{$1} server XX XXX"
+    exit    
+end
+
+
+s3 = RightAws::S3Interface.new(ENV['AMAZON_ACCESS_KEY_ID'], ENV['AMAZON_SECRET_ACCESS_KEY'])
+
+s3.incrementally_list_bucket('assets.vintageaerial.com', { 'prefix' => prefix }) do |key|
+  key[:contents].map {|k| k[:key] }.select {|k| k.match(/650x433w.+\.jpg$/)}.each do |k|
+    count += 1
+  end
+end
+
+puts "#{count} images"

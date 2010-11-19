@@ -28,8 +28,13 @@ AMQP.start(:host => ARGV.shift) do
      if pretend
       sleep 2
      else
-       result = download_and_watermark(body, new_key)
-       header.ack if result
+       begin
+         result = download_and_watermark(body, new_key)
+         header.ack if result
+       rescue Exception => e
+         logger.error "Error: #{e}, sleeping"
+         sleep 10
+       end
      end
    end
  end
