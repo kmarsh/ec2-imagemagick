@@ -14,13 +14,13 @@ case ARGV.size
       puts "Usage: #{$1} server XX XXX"
       exit
     end
-    
+
   when 4
     prefix = "#{ARGV[1]}/#{ARGV[2]}/#{ARGV[3]}/"
-    
+
   else
     puts "Usage: #{$1} server XX XXX"
-    exit    
+    exit
 end
 
 

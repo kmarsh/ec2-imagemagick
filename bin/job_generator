@@ -43,4 +43,4 @@ AMQP.start(:host => host) do
   AMQP.stop { EM.stop }
 end
 
-puts "#{count} jobs queued"
+puts "#{prefix} #{count} jobs queued"
