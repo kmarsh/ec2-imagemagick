@@ -3,33 +3,40 @@ $: << File.expand_path(File.join(File.dirname(__FILE__), 'lib'))
 require 'rubygems'
 require 'right_aws'
 
-host  = ARGV[0]
-count = 0
+count = Hash.new(0)
+sizes = %w[700x503 650x433w]
+
+sizes.each {|size| count[size] = 0 }
+
+def formatted_counts(count)
+  count.map {|k, v| "#{v} #{k}" }.join(', ')
+end
 
 case ARGV.size
-  when 3
-    prefix = "#{ARGV[1]}/#{ARGV[2]}/"
+  when 2
+    prefix = "#{ARGV[0]}/#{ARGV[1]}/"
 
     if !prefix.match(/^(\d{2})\/\d{3}\/$/)
-      puts "Usage: #{$1} server XX XXX"
+      puts "Usage: #{$1} XX XXX"
       exit
     end
 
-  when 4
-    prefix = "#{ARGV[1]}/#{ARGV[2]}/#{ARGV[3]}/"
+  when 3
+    prefix = "#{ARGV[0]}/#{ARGV[1]}/#{ARGV[2]}/"
 
   else
-    puts "Usage: #{$1} server XX XXX"
+    puts "Usage: #{$1} XX XXX"
     exit
 end
-
 
 s3 = RightAws::S3Interface.new(ENV['AMAZON_ACCESS_KEY_ID'], ENV['AMAZON_SECRET_ACCESS_KEY'])
 
 s3.incrementally_list_bucket('assets.vintageaerial.com', { 'prefix' => prefix }) do |key|
-  key[:contents].map {|k| k[:key] }.select {|k| k.match(/650x433w.+\.jpg$/)}.each do |k|
-    count += 1
+  sizes.each do |size|
+    key[:contents].map {|k| k[:key] }.select {|k| k.match(/#{size}.+\.jpg$/) }.each do |k|
+      count[size] += 1
+    end
   end
 end
 
-puts "#{count} images"
+puts "#{prefix}: #{formatted_counts(count)}"
